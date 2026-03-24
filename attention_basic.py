@@ -90,13 +90,6 @@ def prune_invalid_configs(configs, named_args, **kwargs):
 
     # Filter out configs where BLOCK_M > N_CTX
     # Filter out configs where BLOCK_M < BLOCK_N when causal is True
-    # debug prints
-    print(f"\n=== prune_invalid_configs called ===")
-    print(f"N_CTX={N_CTX}, STAGE={STAGE}, causal={causal}")
-    print(f"Total configs before pruning: {len(configs)}")
-    print(f"Sample config[0]: BLOCK_M={configs[0].kwargs.get('BLOCK_M')}, "
-          f"BLOCK_N={configs[0].kwargs.get('BLOCK_N')}, "
-          f"num_stages={configs[0].num_stages}")
 
     pruned = [
         conf for conf in configs 
@@ -104,15 +97,6 @@ def prune_invalid_configs(configs, named_args, **kwargs):
         and (not causal or conf.kwargs.get("BLOCK_M", 0) >= conf.kwargs.get("BLOCK_N", 0))
         and not (N_CTX == conf.kwargs.get("BLOCK_N", 0) and conf.num_stages > 2)
     ]
-
-    print(f"Total configs after pruning: {len(pruned)}")
-    print(f"Remaining configs:")
-    for conf in pruned:
-        print(f"  BLOCK_M={conf.kwargs.get('BLOCK_M')}, "
-              f"BLOCK_N={conf.kwargs.get('BLOCK_N')}, "
-              f"num_stages={conf.num_stages}, "
-              f"num_warps={conf.num_warps}")
-        break
     
     return pruned
 
@@ -125,7 +109,7 @@ def _maybe_make_tensor_desc(desc_or_ptr, shape, strides, block_shape):
     
 
 
-@triton.autotune(configs=list(filter(keep, configs)), key=["N_CTX", "HEAD_DIM"],
+@triton.autotune(configs=list(filter(keep, configs)), key=["N_CTX", "HEAD_DIM", "STAGE"],
                  prune_configs_by={'early_config_prune': prune_invalid_configs})
 @triton.jit
 def _attn_fwd(sm_scale,
@@ -255,13 +239,6 @@ def test_op(Z, H, N_CTX, HEAD_DIM, causal, provider, dtype=torch.float16):
     ref_out = torch.matmul(p, v).half()
     
     tri_out = attn_forward(q, k, v, causal, sm_scale).half()
-
-    best_config = _attn_fwd.best_config
-    print(f"BLOCK_M={best_config.kwargs['BLOCK_M']}, "
-        f"BLOCK_N={best_config.kwargs['BLOCK_N']}, "
-        f"num_stages={best_config.num_stages}, "
-        f"num_warps={best_config.num_warps}, "
-        f"\nZ: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}")
     
     atol = 1e-2
     torch.testing.assert_close(tri_out, ref_out, atol=atol, rtol=0)
