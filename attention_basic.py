@@ -180,7 +180,7 @@ def attn_forward(q, k, v, causal, sm_scale):
     triton.set_allocator(alloc_fn)
 
     def grid(META):
-        return (tl.cdiv(q.shape[2],META["BLOCK_M"]), q.shape[0]*q.shape[1],1)
+        return (triton.cdiv(q.shape[2],META["BLOCK_M"]), q.shape[0]*q.shape[1],1)
     
     _attn_fwd[grid](
             sm_scale,
