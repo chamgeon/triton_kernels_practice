@@ -247,4 +247,4 @@ def test_op(Z, H, N_CTX, HEAD_DIM, causal, provider, dtype=torch.float16):
 
 
 if __name__ == "__main__":
-    test_op(4, 48, 128, 128, True)
+    test_op(4, 48, 128, 128, True, "triton-fp16")
