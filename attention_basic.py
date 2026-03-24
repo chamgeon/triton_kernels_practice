@@ -86,13 +86,14 @@ def keep(conf):
 def prune_invalid_configs(configs, named_args, **kwargs):
     N_CTX = kwargs["N_CTX"]
     STAGE = kwargs["STAGE"]
+    causal = STAGE == 3
 
     # Filter out configs where BLOCK_M > N_CTX
     # Filter out configs where BLOCK_M < BLOCK_N when causal is True
     return [
         conf for conf in configs 
         if conf.kwargs.get("BLOCK_M", 0) <= N_CTX 
-        and (conf.kwargs.get("BLOCK_M", 0) >= conf.kwargs.get("BLOCK_N", 0) or STAGE == 1)
+        and (not causal or conf.kwargs.get("BLOCK_M", 0) >= conf.kwargs.get("BLOCK_N", 0))
         and not (N_CTX == conf.kwargs.get("BLOCK_N", 0) and conf.num_stages > 2)
     ]
 
