@@ -193,6 +193,12 @@ def attn_forward(q, k, v, causal, sm_scale):
 
 
 
+@pytest.fixture(autouse=True)
+def cleanup():
+    yield
+    torch.cuda.empty_cache()
+
+
 # test correctness
 @pytest.mark.parametrize("Z", [1, 4])
 @pytest.mark.parametrize("H", [2, 48])
