@@ -90,12 +90,30 @@ def prune_invalid_configs(configs, named_args, **kwargs):
 
     # Filter out configs where BLOCK_M > N_CTX
     # Filter out configs where BLOCK_M < BLOCK_N when causal is True
-    return [
+    # debug prints
+    print(f"\n=== prune_invalid_configs called ===")
+    print(f"N_CTX={N_CTX}, STAGE={STAGE}, causal={causal}")
+    print(f"Total configs before pruning: {len(configs)}")
+    print(f"Sample config[0]: BLOCK_M={configs[0].kwargs.get('BLOCK_M')}, "
+          f"BLOCK_N={configs[0].kwargs.get('BLOCK_N')}, "
+          f"num_stages={configs[0].num_stages}")
+
+    pruned = [
         conf for conf in configs 
         if conf.kwargs.get("BLOCK_M", 0) <= N_CTX 
         and (not causal or conf.kwargs.get("BLOCK_M", 0) >= conf.kwargs.get("BLOCK_N", 0))
         and not (N_CTX == conf.kwargs.get("BLOCK_N", 0) and conf.num_stages > 2)
     ]
+
+    print(f"Total configs after pruning: {len(pruned)}")
+    print(f"Remaining configs:")
+    for conf in pruned:
+        print(f"  BLOCK_M={conf.kwargs.get('BLOCK_M')}, "
+              f"BLOCK_N={conf.kwargs.get('BLOCK_N')}, "
+              f"num_stages={conf.num_stages}, "
+              f"num_warps={conf.num_warps}")
+    
+    return pruned
 
 @triton.jit
 def _maybe_make_tensor_desc(desc_or_ptr, shape, strides, block_shape):
@@ -242,7 +260,7 @@ def test_op(Z, H, N_CTX, HEAD_DIM, causal, provider, dtype=torch.float16):
         f"BLOCK_N={best_config.kwargs['BLOCK_N']}, "
         f"num_stages={best_config.num_stages}, "
         f"num_warps={best_config.num_warps}, "
-        f"causal: {causal}")
+        f"\nZ: {Z}, H: {H}, N_CTX: {N_CTX}, HEAD_DIM: {HEAD_DIM}, causal: {causal}")
     
     atol = 1e-2
     torch.testing.assert_close(tri_out, ref_out, atol=atol, rtol=0)
