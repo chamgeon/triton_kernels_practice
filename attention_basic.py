@@ -112,6 +112,7 @@ def prune_invalid_configs(configs, named_args, **kwargs):
               f"BLOCK_N={conf.kwargs.get('BLOCK_N')}, "
               f"num_stages={conf.num_stages}, "
               f"num_warps={conf.num_warps}")
+        break
     
     return pruned
 
