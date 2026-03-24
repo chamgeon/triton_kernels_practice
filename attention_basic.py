@@ -244,3 +244,7 @@ def test_op(Z, H, N_CTX, HEAD_DIM, causal, provider, dtype=torch.float16):
     
     atol = 1e-2
     torch.testing.assert_close(tri_out, ref_out, atol=atol, rtol=0)
+
+
+if __name__ == "__main__":
+    test_op(4, 48, 128, 128, True)
