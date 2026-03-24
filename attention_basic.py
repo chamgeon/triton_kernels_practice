@@ -240,7 +240,8 @@ def test_op(Z, H, N_CTX, HEAD_DIM, causal, provider, dtype=torch.float16):
     print(f"BLOCK_M={best_config.kwargs['BLOCK_M']}, "
         f"BLOCK_N={best_config.kwargs['BLOCK_N']}, "
         f"num_stages={best_config.num_stages}, "
-        f"num_warps={best_config.num_warps}")
+        f"num_warps={best_config.num_warps}, "
+        f"causal: {causal}")
     
     atol = 1e-2
     torch.testing.assert_close(tri_out, ref_out, atol=atol, rtol=0)
