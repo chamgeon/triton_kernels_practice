@@ -235,6 +235,12 @@ def test_op(Z, H, N_CTX, HEAD_DIM, causal, provider, dtype=torch.float16):
     ref_out = torch.matmul(p, v).half()
     
     tri_out = attn_forward(q, k, v, causal, sm_scale).half()
+
+    best_config = _attn_fwd.best_config
+    print(f"BLOCK_M={best_config.kwargs['BLOCK_M']}, "
+        f"BLOCK_N={best_config.kwargs['BLOCK_N']}, "
+        f"num_stages={best_config.num_stages}, "
+        f"num_warps={best_config.num_warps}")
     
     atol = 1e-2
     torch.testing.assert_close(tri_out, ref_out, atol=atol, rtol=0)
