@@ -207,6 +207,12 @@ def cleanup():
 @pytest.mark.parametrize("causal", [False, True])
 @pytest.mark.parametrize("provider", ["triton-fp16"])
 def test_op(Z, H, N_CTX, HEAD_DIM, causal, provider, dtype=torch.float16):
+    # skip if estimated memory exceeds threshold
+    total_gpu_mem = torch.cuda.get_device_properties(0).total_memory
+    ref_peak_bytes = Z * H * N_CTX * N_CTX * 4 * 2
+    if ref_peak_bytes > total_gpu_mem * 0.8:
+        pytest.skip(f"Skipping: estimated peak memory {ref_peak_bytes/1e9:.1f} GB exceeds threshold on {total_gpu_mem/1e9:.1f} GB GPU")
+
     torch.manual_seed(0)
     q = (torch.empty((Z, H, N_CTX, HEAD_DIM), dtype=dtype, device=DEVICE).normal_(mean=0.0, std=0.5))
     k = (torch.empty((Z, H, N_CTX, HEAD_DIM), dtype=dtype, device=DEVICE).normal_(mean=0.0, std=0.5))
